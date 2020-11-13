@@ -1,0 +1,72 @@
+---
+title: "RMarkdown Lesson"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Markdown text has formatting directives
+
+# One hash is title header
+
+## Two hashes is second level header
+
+*This asterisk makes italicized text*
+
+**Double asterisk makes bold text**
+
+* create a list by making dashes
+* apple
+* banana
+* kiwi
+* these will be bulleted
++ this is a sub item
++ this is another sub item
+
+1. Here is an ordered list
+2. And here is another item
+  + and a sub item
+  + and another sub item
+
+1. If you make a numbered list as all ones
+1. R is smart enough
+1. To put in the right numbers
+1. This is useful for long lists
+1. And reordering lists
+
+_italicized...go to tools-> markdown quick reference to see all of the formatting options
+an enter does not necessarily mean a new line_
+
+**Add two empty lines if you want to make a new line**
+
+### This is header 3
+
+
+[to include links put link text here] 
+
+in between dollar sign you can put LaTEX syntax
+
+$\sum {n+1}$
+
+Start a new chunk with the back ticks and r, and end it with three back ticks
+command+opt+i adds a chunk for you!
+
+```{r}
+# This is a comment
+x <- 4+4
+x
+```
+
+Don't put in back to back r chunks
+
+Putting the r in brackets tells it that you are writing r code and not python for example
+
+```{r}
+y <- 2^3
+y
+
+print(x+y)
+```
+

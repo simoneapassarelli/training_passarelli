@@ -1,0 +1,63 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+Include package dependencies
+```{r}
+library(readr)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# You can change echo = FALSE if you don't want any code to show up
+```
+
+To Make my outline
+
+# Outline
+- ### Introduction: 
+    - Read in data
+    
+```{r chunk1, message=FALSE}
+# You can add message = false at the top to prevent the output from showing up in your output and knitted file
+# You can also name your chunks!
+bg_chem <- read_csv("BGchem2008data.csv")
+```
+    
+    
+    
+- ### Analysis
+    - calculate summary statistics
+    
+```{r}
+nitrate <-  mean(bg_chem$NO3)
+nitrite <-  mean(bg_chem$NO2)
+amm <- mean(bg_chem$NH4)
+phos <- mean(bg_chem$P)
+```
+    
+  - calculate mean redfield ratio
+    
+```{r}
+ratio <- (nitrate + nitrite + amm)/phos
+```
+
+We calculated the redfield ratio to be `r round(ratio)`
+
+  - plot redfield ratio
+  
+```{r}
+plot(bg_chem$P, bg_chem$NO2 + bg_chem$NO3 + bg_chem$NH4)
+```
+  
+    
+
+# Data source
+These data are available [here](https://arcticdata.io/catalog/view/doi:10.18739/A25T3FZ8X) and were downloaded from the Arctic Data Center.
+
+
+
+
