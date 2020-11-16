@@ -1,0 +1,184 @@
+---
+title: "Session 8"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(readr)
+```
+
+
+
+## Data Sources
+
+### Read in the data
+
+One nice feature of the read_csv (compared to the read.csv command) is that it can read in from a web url. Using a url instead of a file path make this much more reproducible.
+
+```{r}
+catch_original <- read_csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1")
+
+# Control shift M is shortcut for the pipe
+```
+
+
+## Clean and Reshape the data
+### Remove unnecessary columns
+
+```{r}
+ catch_data <- catch_original %>% 
+  select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum)
+
+
+# Or a shorter way
+ catch_data <- catch_original %>% 
+  select(-All, -notesRegCode)
+ 
+ summary(catch_data)
+```
+
+
+
+### Check column typing
+```{r}
+summary(catch_data)
+
+catch_clean <- catch_data %>% 
+  mutate(Chinook = as.numeric(Chinook))
+
+
+is.na(catch_data)
+which(is.na(catch_clean$Chinook))  #tells you which observation/s are na 
+
+# There is one obs that is an I instead of a one
+
+catch_clean <- catch_data %>% 
+  mutate(Chinook = ifelse(Chinook=="I", 1, Chinook)) %>%
+  mutate(Chinook = as.numeric(Chinook))
+
+# If the first statement is true, uses value of second argument, if false, uses value in the Chinook column
+
+
+```
+Oh no! Chinook is a character variable
+
+### Reshape data
+
+```{r}
+catch_long <- catch_clean %>% 
+  pivot_longer(-c(Region, Year), names_to="species", values_to="catch")
+
+head(catch_long)
+
+catch_wide <- catch_long %>% 
+  pivot_wider(names_from = species, values_from = catch)
+
+head(catch_wide)
+```
+## Update value to thousands
+
+```{r}
+catch_long <- catch_long %>% 
+  rename(catch_thousands = catch)
+```
+
+```{r}
+
+catch_long <- catch_long %>% 
+  mutate(catch = catch_thousands * 1000) %>% 
+  select(-catch_thousands)
+head(catch_long)
+```
+```{r}
+# Split/apply/combine all at once
+mean_region <- catch_long %>% 
+  group_by(Region) %>% 
+  summarize(catch_mean = mean(catch)) %>% 
+  arrange(- catch_mean)
+
+head(mean_region)
+
+
+```
+```{r}
+n_region <- catch_long %>% 
+  group_by(Region) %>% 
+  summarize(n=n())
+
+head(n_region)
+```
+
+```{r}
+
+SSE_catch <- catch_long %>% 
+  filter(Region=="SSE")
+
+head(SSE_catch)
+```
+
+## Join to Regions dataset
+
+```{r}
+region_defs <- read_csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1") %>% 
+select(code, mgmtArea)
+
+catch_joined <- left_join(catch_long, region_defs, by = c("Region" = "code"))
+
+head(catch_joined)
+```
+
+Two other very useful functions: separate and unite
+
+```{r}
+sites_df <- data.frame(site = c("HAW-101",
+                                "HAW-103",
+                                "OAH-320",
+                                "OAH-219",
+                                "MAI-039"))
+
+sites_df %>% 
+  separate(site, c("island", "site_number"), "-")
+
+```
+
+```{r}
+dates_df <- data.frame(year = c("1930",
+                                "1930",
+                                "1930"),
+                       month = c("12",
+                                "12",
+                                "12"),
+                       day = c("14",
+                               "15",
+                               "16"),
+                       stringsAsFactors = FALSE)
+
+dates_df %>% 
+  unite(date, year, month, day, sep = "-") #put name of new column first
+```
+```{r}
+catch_original <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1", method = "libcurl"),
+                  stringsAsFactors = FALSE)
+region_defs <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1", method = "libcurl"),
+                        stringsAsFactors = FALSE) %>% 
+    select(code, mgmtArea)
+
+mean_region <- catch_original %>%
+  select(-All, -notesRegCode) %>% 
+  mutate(Chinook = ifelse(Chinook == "I", 1, Chinook)) %>% 
+  mutate(Chinook = as.numeric(Chinook)) %>% 
+  pivot_longer(-c(Region, Year), names_to = "species", values_to = "catch") %>%
+  mutate(catch = catch*1000) %>% 
+  group_by(Region) %>% 
+  summarize(mean_catch = mean(catch)) %>% 
+  left_join(region_defs, by = c("Region" = "code"))
+```
+
+
