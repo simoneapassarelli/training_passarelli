@@ -1,0 +1,175 @@
+---
+title: "Data Vis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Packages
+```{r, message=FALSE}
+  library(leaflet)
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(DT)
+  library(scales) # install.packages("scales")
+  library(knitr)
+  library(leaflet)
+```
+
+
+## Load the data
+```{r}
+data_url <- "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e"
+
+# Try catch helps you catch errors as they occur and do something about it
+
+
+# If it doesn't find the file locally, then load it from the url
+esc <- tryCatch(
+    read.csv("data/escapement.csv", stringsAsFactors = FALSE),
+    error=function(cond) {
+        message(paste("Escapement file does not seem to exist, so get it from the KNB."))
+        esc <- read.csv(url(data_url, method = "libcurl"), stringsAsFactors = FALSE)
+        return(esc)
+    }
+)
+
+head(esc)
+```
+Calculate annual escapement
+```{r}
+
+annual_esc <- esc %>% 
+  separate(sampleDate, into= c("year", "month", "day"), "-") %>% 
+  mutate(year=as.numeric(year)) %>% 
+  group_by(SASAP.Region, year, Species) %>% 
+  summarize(escapement=sum(DailyCount)) %>% 
+  filter(Species %in% c("Sockeye", "Chum", "Coho", "Pink", "Chinook"))
+
+# 
+
+
+```
+Create a bar plot
+
+```{r}
+# Start with base plut and add geoms
+ggplot(annual_esc, mapping = aes(x=Species, y=escapement, fill=SASAP.Region)) +
+  geom_col()
+  
+# If you add the color to the aes, it is like you are adding another AXIS or dimension, as opposed to adding it to the geom, where it would just fill in the whole bar
+
+# If you add the aes arguments to the geom, then you have to add it for every single geom
+
+my_theme <-   theme_classic() + #make sure you do your built in theme before your specific theme
+  theme(legend.position = "botton") 
+
+ggplot(annual_esc, aes(x = Species, y = escapement, fill = SASAP.Region)) +
+  geom_col()
+
+annual_esc %>% 
+  filter(SASAP.Region == "Kodiak") %>% 
+ggplot(aes(x = year, y = escapement, color = Species)) + 
+    geom_line() +
+    geom_point()
+
+kodiak_esc <- annual_esc %>% 
+  filter(SASAP.Region == "Kodiak")
+
+# Start with base plut and add geoms
+ggplot(kodiak_esc, aes(x=Species, y=escapement, color = Species)) +
+  geom_point() +
+   geom_line() +
+  ylab("Escapement") +
+  ggtitle("Kodiak Annual Escapement") +
+  my_theme
+
+  
+```
+
+Use the scales package
+```{r}
+ggplot(kodiak_esc, aes(x = year, y = escapement, color = Species)) + 
+    geom_line() +
+    geom_point() +
+    scale_y_continuous(labels = comma) +
+    ylab("Escapement") +
+    ggtitle("Kodiak Salmon Escapement") +
+    my_theme
+```
+
+
+
+```{r}
+# Add a facet wrap to show every escapement by region
+
+ggplot(annual_esc, aes(x = year, y = escapement, color = Species)) + 
+    geom_line() +
+    geom_point() +
+    scale_y_continuous(labels = comma) +
+    facet_wrap(~SASAP.Region, scales = "free_y", ncol = 2) +
+    ylab("Escapement") +
+    my_theme
+```
+
+Working with tables 
+
+```{r}
+locations <- esc %>% 
+  distinct(Location, Latitude, Longitude) %>% 
+  drop_na()
+
+```
+
+Make an interactive table--so cool!
+```{r}
+datatable(locations)
+```
+
+Make a static table
+```{r}
+kable(locations)
+```
+
+Also try the stargazer package to knit to pdf!
+
+Easily create presentation ready display tables with gt
+
+
+Making maps!
+
+```{r}
+leaflet(locations) %>% 
+  addTiles() %>% 
+  addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~ Location)
+```
+
+
+## Make a pretty map
+
+Leaflet supports a bunch of tile servers. It's built by java. All over the world. Leaflet is only for interactive maps but we will learn how to make static maps
+
+
+```{r}
+
+leaflet(locations) %>% 
+  addWMSTiles("https://www.gebco.net/data_and_products/gebco_web_services/web_map_service/mapserv?",
+              layers = 'GEBCO_LATEST',
+              attribution = "Imagery reproduced from the GEBCO_2014 Grid, version 20150318, www.gebco.net") %>%
+  addCircleMarkers(lng = ~Longitude,
+                   lat = ~Latitude,
+                   popup = ~ Location,
+                   radius = 5,
+                   # set fill properties
+                   fillColor = "salmon",
+                   fillOpacity = 1,
+                   # set stroke properties
+                   stroke = T,
+                   weight = 0.5,
+                   color = "white",
+                   opacity = 1)
+```
+
