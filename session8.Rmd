@@ -180,37 +180,3 @@ mean_region <- catch_original %>%
   summarize(mean_catch = mean(catch)) %>% 
   left_join(region_defs, by = c("Region" = "code"))
 ```
-
-Making maps!
-
-```{r}
-leaflet(locations) %>% 
-  addTiles() %>% 
-  addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~ Location)
-```
-
-
-## Make a pretty map
-
-Leaflet supports a bunch of tile servers. It's built by java. All over the world. Leaflet is only for interactive maps but we will learn how to make static maps
-
-
-```{r}
-
-leaflet(locations) %>% 
-  addWMSTiles("https://www.gebco.net/data_and_products/gebco_web_services/web_map_service/mapserv?",
-              layers = 'GEBCO_LATEST',
-              attribution = "Imagery reproduced from the GEBCO_2014 Grid, version 20150318, www.gebco.net") %>%
-  addCircleMarkers(lng = ~Longitude,
-                   lat = ~Latitude,
-                   popup = ~ Location,
-                   radius = 5,
-                   # set fill properties
-                   fillColor = "salmon",
-                   fillOpacity = 1,
-                   # set stroke properties
-                   stroke = T,
-                   weight = 0.5,
-                   color = "white",
-                   opacity = 1)
-```
